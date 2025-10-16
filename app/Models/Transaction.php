@@ -15,7 +15,7 @@ class Transaction extends Model
         'amount',
         'status',
         'payment_method',
-        'payment_url', // Untuk integrasi payment gateway di masa depan
+        'payment_url',
     ];
 
     /**
