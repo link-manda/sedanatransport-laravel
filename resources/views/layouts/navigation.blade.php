@@ -15,6 +15,23 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+
+                    <!-- Link untuk Pelanggan -->
+                    @role('pelanggan')
+                    <x-nav-link :href="route('bookings.index')" :active="request()->routeIs('bookings.index')">
+                        {{ __('My Bookings') }}
+                    </x-nav-link>
+                    @endrole
+
+                    <!-- Link untuk Admin & Petugas -->
+                    @role('admin|petugas')
+                    <x-nav-link :href="route('admin.vehicles.index')" :active="request()->routeIs('admin.vehicles.*')">
+                        {{ __('Vehicles') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('admin.bookings.index')" :active="request()->routeIs('admin.bookings.*')">
+                        {{ __('Bookings') }}
+                    </x-nav-link>
+                    @endrole
                 </div>
             </div>
 
@@ -70,13 +87,7 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            @role('admin|petugas')
-            <x-nav-link :href="route('admin.vehicles.index')" :active="request()->routeIs('admin.vehicles.*')">
-                {{ __('Vehicles') }}
-            </x-nav-link>
-            @endrole
         </div>
-
 
         <!-- Responsive Settings Options -->
         <div class="pt-4 pb-1 border-t border-gray-200">

@@ -19,10 +19,11 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
-        
+
         $this->call([
             RolePermissionSeeder::class,
-            // Tambahkan seeder lain di sini nanti
+            CategorySeeder::class, // <-- Panggil seeder kategori
+            VehicleSeeder::class,  // <-- Panggil seeder kendaraan setelah kategori
         ]);
     }
 }
