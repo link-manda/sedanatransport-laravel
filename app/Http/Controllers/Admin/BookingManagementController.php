@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 
 class BookingManagementController extends Controller
@@ -12,6 +13,46 @@ class BookingManagementController extends Controller
     {
         $bookings = Booking::with(['user', 'vehicle'])->latest()->paginate(10);
         return view('admin.bookings.index', compact('bookings'));
+    }
+
+    public function approve(Booking $booking)
+    {
+        $booking->status = 'approved';
+        $booking->save();
+
+        $vehicle = $booking->vehicle;
+        $vehicle->status = 'rented';
+        $vehicle->save();
+
+        // Buat transaksi baru saat booking di-approve
+        Transaction::create([
+            'booking_id' => $booking->id,
+            'amount' => $booking->total_price,
+            'status' => 'unpaid',
+        ]);
+
+        return redirect()->route('admin.bookings.index')->with('success', 'Booking approved successfully and transaction created.');
+    }
+
+    public function cancel(Booking $booking)
+    {
+        // Logika untuk mengembalikan status kendaraan jika booking sudah di-approve sebelumnya
+        if ($booking->status === 'approved') {
+            $vehicle = $booking->vehicle;
+            $vehicle->status = 'available';
+            $vehicle->save();
+        }
+
+        $booking->status = 'cancelled';
+        $booking->save();
+
+        // Jika sudah ada transaksi, tandai sebagai failed atau batalkan
+        if ($booking->transaction) {
+            $booking->transaction->update(['status' => 'cancelled']);
+        }
+
+
+        return redirect()->route('admin.bookings.index')->with('success', 'Booking cancelled successfully.');
     }
 
     public function updateStatus(Request $request, Booking $booking)

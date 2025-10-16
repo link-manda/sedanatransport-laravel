@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VehicleController;
 use App\Http\Controllers\VehiclePageController; 
 use App\Http\Controllers\BookingController; 
+use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\Admin\BookingManagementController; 
 
 
@@ -37,6 +38,8 @@ Route::middleware('auth')->group(function () {
         // Rute Manajemen Booking
         Route::get('bookings', [BookingManagementController::class, 'index'])->name('bookings.index');
         Route::patch('bookings/{booking}/status', [BookingManagementController::class, 'updateStatus'])->name('bookings.updateStatus');
+        Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
+        Route::patch('transactions/{transaction}/mark-as-paid', [\App\Http\Controllers\Admin\TransactionController::class, 'markAsPaid'])->name('transactions.markAsPaid');
     });
 });
 

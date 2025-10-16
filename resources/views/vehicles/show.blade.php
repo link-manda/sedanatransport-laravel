@@ -35,26 +35,59 @@
                         </div>
                         @endif
 
-                        <form action="{{ route('bookings.store') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="vehicle_id" value="{{ $vehicle->id }}">
+                        <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">Book This Vehicle</h2>
 
-                            <div>
-                                <x-input-label for="start_date" :value="__('Start Date')" />
-                                <x-text-input id="start_date" class="block mt-1 w-full" type="date" name="start_date" :value="old('start_date')" required />
-                            </div>
+                            <!-- Cek status otentikasi pengguna -->
+                            @auth
+                            <!-- Jika pengguna sudah login, tampilkan form -->
+                            <form action="{{ route('bookings.store') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="vehicle_id" value="{{ $vehicle->id }}">
 
-                            <div class="mt-4">
-                                <x-input-label for="end_date" :value="__('End Date')" />
-                                <x-text-input id="end_date" class="block mt-1 w-full" type="date" name="end_date" :value="old('end_date')" required />
-                            </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
+                                        <input type="date" id="start_date" name="start_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                        @error('start_date')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                    <div>
+                                        <label for="end_date" class="block text-sm font-medium text-gray-700">End Date</label>
+                                        <input type="date" id="end_date" name="end_date" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" required>
+                                        @error('end_date')
+                                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+                                </div>
 
-                            <div class="flex items-center justify-end mt-6">
-                                <x-primary-button>
-                                    {{ __('Send Booking Request') }}
-                                </x-primary-button>
+                                @error('vehicle_unavailable')
+                                <p class="text-red-500 text-sm mt-4 font-semibold">{{ $message }}</p>
+                                @enderror
+
+                                <div class="mt-6">
+                                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-300 ease-in-out">
+                                        Send Booking Request
+                                    </button>
+                                </div>
+                            </form>
+                            @else
+                            <!-- Jika pengguna adalah tamu (belum login), tampilkan pesan ini -->
+                            <div class="text-center border-2 border-dashed border-gray-300 p-8 rounded-lg">
+                                <h3 class="text-lg font-medium text-gray-900">You need an account to book this vehicle.</h3>
+                                <p class="mt-2 text-sm text-gray-500">Please log in to continue or register if you don't have an account yet.</p>
+                                <div class="mt-6 flex justify-center gap-4">
+                                    <a href="{{ route('login') }}" class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        Log In
+                                    </a>
+                                    <a href="{{ route('register') }}" class="inline-flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        Register
+                                    </a>
+                                </div>
                             </div>
-                        </form>
+                            @endauth
+                        </div>
                     </div>
                 </div>
             </div>
