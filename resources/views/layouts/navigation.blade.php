@@ -40,6 +40,9 @@
                     <x-nav-link :href="route('admin.transactions.index')" :active="request()->routeIs('admin.transactions.index')">
                         {{ __('Transactions') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('admin.reports.index')" :active="request()->routeIs('admin.reports.*')">
+                        {{ __('Reports') }}
+                    </x-nav-link>
                     @endrole
                     @endauth
                 </div>

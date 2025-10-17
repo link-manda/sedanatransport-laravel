@@ -4,7 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\VehicleController;
 use App\Http\Controllers\VehiclePageController; 
-use App\Http\Controllers\BookingController; 
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\Admin\BookingManagementController; 
 
@@ -40,6 +41,9 @@ Route::middleware('auth')->group(function () {
         Route::patch('bookings/{booking}/status', [BookingManagementController::class, 'updateStatus'])->name('bookings.updateStatus');
         Route::get('transactions', [\App\Http\Controllers\Admin\TransactionController::class, 'index'])->name('transactions.index');
         Route::patch('transactions/{transaction}/mark-as-paid', [\App\Http\Controllers\Admin\TransactionController::class, 'markAsPaid'])->name('transactions.markAsPaid');
+        Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+        Route::post('/reports/csv', [ReportController::class, 'exportCsv'])->name('reports.export.csv');
+        Route::post('/reports/pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');
     });
 });
 
