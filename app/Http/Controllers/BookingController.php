@@ -6,49 +6,62 @@ use App\Models\Booking;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class BookingController extends Controller
 {
     public function index()
     {
-        $bookings = Auth::user()->bookings()->with('vehicle')->latest()->paginate(10);
+        // Ambil booking milik pengguna yang sedang login
+        $bookings = auth()->user()->bookings()->with(['vehicle.category', 'transaction'])->latest()->paginate(5);
+        
         return view('bookings.index', compact('bookings'));
     }
 
     public function store(Request $request)
     {
+        // 1. Validasi yang lebih ketat dengan PESAN KUSTOM
         $request->validate([
             'vehicle_id' => 'required|exists:vehicles,id',
             'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after:start_date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ], [
+            'end_date.after_or_equal' => 'Tanggal selesai tidak boleh dipilih sebelum tanggal mulai.',
+            'start_date.after_or_equal' => 'Tanggal mulai tidak bisa dipilih dari hari yang telah lalu.',
         ]);
 
         $vehicle = Vehicle::findOrFail($request->vehicle_id);
         $startDate = Carbon::parse($request->start_date);
         $endDate = Carbon::parse($request->end_date);
 
-        // Cek ketersediaan kendaraan pada rentang tanggal yang dipilih
-        $isUnavailable = Booking::where('vehicle_id', $vehicle->id)
+        // Validasi ketersediaan kendaraan pada rentang tanggal yang dipilih
+        $isBooked = Booking::where('vehicle_id', $vehicle->id)
             ->where('status', 'approved')
             ->where(function ($query) use ($startDate, $endDate) {
-                $query->where('start_date', '<=', $endDate)
-                    ->where('end_date', '>=', $startDate);
-            })
-            ->exists();
+                $query->where(function ($q) use ($startDate, $endDate) {
+                    $q->where('start_date', '<=', $endDate)
+                      ->where('end_date', '>=', $startDate);
+                });
+            })->exists();
 
-        if ($isUnavailable) {
-            throw ValidationException::withMessages([
-                'start_date' => 'The selected vehicle is not available for the chosen dates. Please select another date range.',
-            ]);
+        if ($isBooked) {
+            return back()->withErrors(['vehicle_unavailable' => 'Sorry, this vehicle is not available for the selected dates.'])->withInput();
         }
 
-        $rentalDays = $endDate->diffInDays($startDate);
-        $totalPrice = $rentalDays * $vehicle->daily_rate;
+        // 2. Perbaikan Logika Perhitungan Hari: tambahkan +1 untuk membuatnya inklusif
+        // Contoh: 18 ke 19 adalah 2 hari, bukan 1. (19-18)+1 = 2.
+        $numberOfDays = $startDate->diffInDays($endDate) + 1;
 
+        // Pastikan jumlah hari tidak pernah 0 atau negatif (sebagai pengaman tambahan)
+        if ($numberOfDays <= 0) {
+             $numberOfDays = 1;
+        }
+
+        $totalPrice = $vehicle->daily_rate * $numberOfDays;
+
+        // Buat booking baru
         Booking::create([
-            'user_id' => Auth::id(),
+            'user_id' => auth()->id(),
             'vehicle_id' => $vehicle->id,
             'start_date' => $startDate,
             'end_date' => $endDate,
@@ -56,6 +69,8 @@ class BookingController extends Controller
             'status' => 'pending',
         ]);
 
-        return redirect()->route('bookings.index')->with('success', 'Booking request has been sent successfully! Please wait for admin approval.');
+        return redirect()->route('bookings.index')->with('success', 'Booking request sent successfully!');
     }
 }
+
+
