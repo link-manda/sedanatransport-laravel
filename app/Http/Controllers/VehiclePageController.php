@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
+use App\Models\Booking;
 use Illuminate\Http\Request;
 
 class VehiclePageController extends Controller
@@ -15,6 +16,17 @@ class VehiclePageController extends Controller
 
     public function show(Vehicle $vehicle)
     {
-        return view('vehicles.show', compact('vehicle'));
+        $bookings = Booking::where('vehicle_id', $vehicle->id)
+            ->whereIn('status', ['approved', 'ongoing', 'paid'])
+            ->get();
+
+        $booked_dates = $bookings->map(function ($booking) {
+            return [
+                'from' => $booking->start_date->format('Y-m-d'),
+                'to'   => $booking->end_date->format('Y-m-d'),
+            ];
+        });
+
+        return view('vehicles.show', compact('vehicle', 'booked_dates'));
     }
 }

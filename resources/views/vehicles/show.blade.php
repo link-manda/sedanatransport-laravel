@@ -1,86 +1,158 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Book Vehicle: {{ $vehicle->brand }} {{ $vehicle->model }}
+            {{ __('Vehicle Details') }}
         </h2>
     </x-slot>
 
     <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            @if (session('success'))
+            <div class="mb-6 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg relative" role="alert">
+                <span class="block sm:inline">{{ session('success') }}</span>
+            </div>
+            @endif
+
+            @if (session('error'))
+            <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative" role="alert">
+                <span class="block sm:inline">{{ session('error') }}</span>
+            </div>
+            @endif
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <!-- Vehicle Details -->
-                    <div>
-                        <img src="{{ $vehicle->photo ? Storage::url($vehicle->photo) : 'https://placehold.co/600x400/e2e8f0/e2e8f0' }}" alt="{{ $vehicle->model }}" class="w-full h-auto object-cover rounded-lg shadow">
-                        <h3 class="font-bold text-2xl text-gray-900 mt-4">{{ $vehicle->brand }} {{ $vehicle->model }} ({{ $vehicle->year }})</h3>
-                        <p class="text-md text-gray-600">{{ $vehicle->category->name }}</p>
-                        <p class="text-gray-700 mt-2">Plate Number: <span class="font-mono bg-gray-100 px-2 py-1 rounded">{{ $vehicle->plate_number }}</span></p>
-                        <p class="mt-4 text-3xl font-bold text-gray-800">
-                            Rp {{ number_format($vehicle->daily_rate, 0, ',', '.') }} <span class="text-lg font-normal">/ day</span>
-                        </p>
+                <div class="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+                    <!-- Kolom Gambar dan Detail -->
+                    <div class="lg:col-span-3">
+                        <img src="{{ Storage::url($vehicle->photo) }}" alt="{{ $vehicle->name }}" class="w-full h-auto object-cover rounded-lg shadow-md mb-6">
+
+                        <h1 class="text-3xl md:text-4xl font-bold text-gray-900">{{ $vehicle->brand }} {{ $vehicle->model }}</h1>
+                        <p class="text-lg text-gray-600 mt-1">{{ $vehicle->category->name }} &bull; {{ $vehicle->year }}</p>
+
+                        <div class="mt-6 border-t pt-4">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">Specifications</h3>
+                            <ul class="space-y-2 text-gray-700">
+                                <li><span class="font-semibold w-24 inline-block">Brand:</span> {{ $vehicle->brand }}</li>
+                                <li><span class="font-semibold w-24 inline-block">Model:</span> {{ $vehicle->model }}</li>
+                                <li><span class="font-semibold w-24 inline-block">Year:</span> {{ $vehicle->year }}</li>
+                                <li><span class="font-semibold w-24 inline-block">Plate:</span> {{ $vehicle->plate_number }}</li>
+                            </ul>
+                        </div>
                     </div>
 
-                    <!-- Booking Form -->
-                    <div>
-                        <h3 class="font-semibold text-xl border-b pb-2 mb-4">Rental Form</h3>
-                        
-                        @auth
-                            <form action="{{ route('bookings.store') }}" method="POST">
+                    <!-- Kolom Booking -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-gray-50 border rounded-lg p-6 sticky top-8">
+                            <p class="text-2xl font-bold text-indigo-600">
+                                Rp {{ number_format($vehicle->daily_rate, 0, ',', '.') }}
+                                <span class="text-base font-normal text-gray-500">/ day</span>
+                            </p>
+
+                            <div class="mt-4 text-sm text-gray-600">
+                                Status:
+                                @if ($vehicle->status == 'available')
+                                <span class="font-semibold text-green-600">Available</span>
+                                @else
+                                <span class="font-semibold text-red-600">Not Available</span>
+                                @endif
+                            </div>
+
+                            @auth
+                            {{-- Tampilkan form hanya jika pengguna sudah login --}}
+                            <form action="{{ route('bookings.store') }}" method="POST" class="mt-6">
                                 @csrf
                                 <input type="hidden" name="vehicle_id" value="{{ $vehicle->id }}">
 
-                                <!-- General Error for vehicle availability -->
-                                @error('vehicle_unavailable')
-                                    <div class="mb-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded" role="alert">
-                                        <p class="font-bold">Not Available</p>
-                                        <p>{{ $message }}</p>
-                                    </div>
-                                @enderror
-
                                 <div class="space-y-4">
-                                    <!-- Start Date -->
                                     <div>
                                         <x-input-label for="start_date" :value="__('Start Date')" />
-                                        <x-text-input id="start_date" class="block mt-1 w-full @error('start_date') border-red-500 @enderror" type="date" name="start_date" :value="old('start_date')" required />
-                                        @error('start_date')
-                                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                        @enderror
+                                        <x-text-input id="start_date" class="block mt-1 w-full" type="text" name="start_date" :value="old('start_date')" required autocomplete="off" placeholder="Select start date" />
+                                        <x-input-error :messages="$errors->get('start_date')" class="mt-2" />
                                     </div>
 
-                                    <!-- End Date -->
                                     <div>
                                         <x-input-label for="end_date" :value="__('End Date')" />
-                                        <x-text-input id="end_date" class="block mt-1 w-full @error('end_date') border-red-500 @enderror" type="date" name="end_date" :value="old('end_date')" required />
-                                        @error('end_date')
-                                            <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
-                                        @enderror
+                                        <x-text-input id="end_date" class="block mt-1 w-full" type="text" name="end_date" :value="old('end_date')" required autocomplete="off" placeholder="Select end date" />
+                                        <x-input-error :messages="$errors->get('end_date')" class="mt-2" />
                                     </div>
                                 </div>
 
-                                <div class="flex items-center justify-end mt-6">
-                                    <x-primary-button>
-                                        {{ __('Send Booking Request') }}
-                                    </x-primary-button>
-                                </div>
+                                @if ($vehicle->status == 'available')
+                                <x-primary-button class="w-full justify-center mt-6 text-lg py-3">
+                                    {{ __('Book Now') }}
+                                </x-primary-button>
+                                @else
+                                <button type="button" class="w-full text-center mt-6 text-lg py-3 bg-gray-400 text-white font-bold rounded-md cursor-not-allowed">
+                                    Not Available
+                                </button>
+                                @endif
                             </form>
-                        @else
-                             <div class="text-center border-2 border-dashed border-gray-300 p-8 rounded-lg">
-                                <h3 class="text-lg font-medium text-gray-900">You need an account to book.</h3>
-                                <p class="mt-2 text-sm text-gray-500">Please log in to continue or register if you don't have an account yet.</p>
-                                <div class="mt-6 flex justify-center gap-4">
-                                    <a href="{{ route('login') }}" class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
-                                        Log In
-                                    </a>
-                                    <a href="{{ route('register') }}" class="inline-flex items-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                        Register
-                                    </a>
-                                </div>
+                            @endauth
+
+                            @guest
+                            {{-- Tampilkan pesan dan tombol login jika pengguna adalah tamu --}}
+                            <div class="mt-6 border-t pt-6">
+                                <p class="text-center text-gray-700">You must be logged in to book this vehicle.</p>
+                                <a href="{{ route('login') }}" class="w-full inline-block text-center mt-4 text-lg py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-md transition duration-300">
+                                    Login to Book
+                                </a>
                             </div>
-                        @endauth
+                            @endguest
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</x-app-layout>
 
+    @push('scripts')
+    <script>
+        // Inisialisasi Litepicker untuk Start Date
+        const startDatePicker = new Litepicker({
+            element: document.getElementById('start_date'),
+            singleMode: true,
+            format: 'YYYY-MM-DD',
+            autoApply: true,
+            minDate: new Date(), // tidak bisa pilih tanggal kemarin
+            lang: {
+                days: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+                months: [
+                    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                ],
+                apply: 'Pilih',
+                cancel: 'Batal'
+            },
+            onSelect: (date) => {
+                // Set minDate untuk end date = start date
+                endDatePicker.setOptions({
+                    minDate: date.dateInstance
+                });
+            }
+        });
+
+        // Inisialisasi Litepicker untuk End Date
+        const endDatePicker = new Litepicker({
+            element: document.getElementById('end_date'),
+            singleMode: true,
+            format: 'YYYY-MM-DD',
+            autoApply: true,
+            minDate: new Date(),
+            lang: {
+                days: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
+                months: [
+                    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+                ],
+                apply: 'Pilih',
+                cancel: 'Batal'
+            },
+            onSelect: (date) => {
+                // Set maxDate untuk start date = end date
+                startDatePicker.setOptions({
+                    maxDate: date.dateInstance
+                });
+            }
+        });
+    </script>
+    @endpush
+</x-app-layout>
