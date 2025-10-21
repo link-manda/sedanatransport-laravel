@@ -8,13 +8,23 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="space-y-6">
+
+                @if(session('success'))
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md" role="alert">
+                    <p>{{ session('success') }}</p>
+                </div>
+                @endif
+                @if(session('error'))
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-md" role="alert">
+                    <p>{{ session('error') }}</p>
+                </div>
+                @endif
+
                 @forelse ($bookings as $booking)
                 <div class="bg-white overflow-hidden shadow-lg sm:rounded-lg flex flex-col md:flex-row">
                     <!-- Vehicle Image -->
                     <div class="md:w-1/3">
-                        <img src="{{ $booking->vehicle->photo ? Storage::url($booking->vehicle->photo) : 'https://placehold.co/600x400/e2e8f0/e2e8f0' }}"
-                            alt="{{ $booking->vehicle->brand }} {{ $booking->vehicle->model }}"
-                            class="object-cover h-48 w-full md:h-full">
+                        <img src="{{ $booking->vehicle->photo ? Storage::url($booking->vehicle->photo) : 'https://placehold.co/600x400/e2e8f0/e2e8f0' }}" alt="{{ $booking->vehicle->brand }} {{ $booking->vehicle->model }}" class="object-cover h-48 w-full md:h-full">
                     </div>
 
                     <!-- Booking Details -->
@@ -27,7 +37,9 @@
                             <span class="mt-2 sm:mt-0 px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
                                     @if ($booking->status == 'approved') bg-green-100 text-green-800 @endif
                                     @if ($booking->status == 'pending') bg-yellow-100 text-yellow-800 @endif
-                                    @if ($booking->status == 'cancelled') bg-red-100 text-red-800 @endif">
+                                    @if ($booking->status == 'cancelled') bg-red-100 text-red-800 @endif
+                                    @if ($booking->status == 'expired') bg-gray-100 text-gray-800 @endif
+                                    @if ($booking->status == 'completed') bg-blue-100 text-blue-800 @endif">
                                 {{ ucfirst($booking->status) }}
                             </span>
                         </div>
@@ -53,21 +65,28 @@
                             <div class="flex justify-between items-center">
                                 <div>
                                     <p class="text-sm font-medium text-gray-500">Payment Status:</p>
-                                    @if ($booking->status == 'approved')
-                                    @if ($booking->transaction && $booking->transaction->status == 'paid')
-                                    <p class="font-semibold text-green-600">Paid</p>
-                                    @else
+                                    @if ($booking->transaction)
+                                    @if ($booking->transaction->status == 'paid')
+                                    <p class="font-semibold text-green-600">Paid on {{ $booking->transaction->updated_at->format('d M Y') }}</p>
+                                    @elseif ($booking->transaction->status == 'pending')
                                     <p class="font-semibold text-yellow-600">Waiting for Payment</p>
+                                    @elseif ($booking->transaction->status == 'waiting_confirmation')
+                                    <p class="font-semibold text-blue-600">Waiting for Confirmation</p>
+                                    @if ($booking->transaction->payment_due_at)
+                                    <p class="text-xs text-gray-500">Due: {{ $booking->transaction->payment_due_at->format('d M Y, H:i') }}</p>
+                                    @endif
+                                    @else
+                                    <p class="font-semibold text-red-600">{{ ucfirst($booking->transaction->status) }}</p>
                                     @endif
                                     @else
                                     <p class="text-gray-500">-</p>
                                     @endif
                                 </div>
-                                @if ($booking->status == 'approved' && $booking->transaction && $booking->transaction->status == 'unpaid')
-                                {{-- Tombol ini bisa dihubungkan ke payment gateway di masa depan --}}
-                                <button class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                                {{-- Tombol "Pay Now" tidak memerlukan perubahan --}}
+                                @if ($booking->status == 'approved' && $booking->transaction && $booking->transaction->status == 'pending')
+                                <a href="{{ route('payment.show', $booking) }}" class="px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                                     Pay Now
-                                </button>
+                                </a>
                                 @endif
                             </div>
                         </div>

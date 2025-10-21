@@ -21,4 +21,45 @@ class TransactionController extends Controller
 
         return redirect()->route('admin.transactions.index')->with('success', 'Transaction has been marked as paid.');
     }
+
+    public function updateStatus(Request $request, Transaction $transaction)
+    {
+        // Validasi input
+        $request->validate([
+            'status' => 'required|in:paid,failed',
+        ]);
+
+        $newStatus = $request->input('status');
+        $booking = $transaction->booking;
+
+        // Jika status tidak berubah, langsung kembalikan
+        if ($transaction->status === $newStatus) {
+            return redirect()->route('admin.transactions.index');
+        }
+
+        // Logika jika pembayaran DITOLAK (failed)
+        if ($newStatus === 'failed') {
+            $transaction->update(['status' => 'failed']);
+
+            // Batalkan booking terkait
+            if ($booking) {
+                $booking->update(['status' => 'cancelled']);
+                // Kembalikan status kendaraan menjadi 'available'
+                $booking->vehicle->update(['status' => 'available']);
+            }
+
+            return redirect()->route('admin.transactions.index')->with('success', 'Transaction has been rejected and the booking is cancelled.');
+        }
+
+        // Logika jika pembayaran DITERIMA (paid)
+        if ($newStatus === 'paid') {
+            $transaction->update(['status' => 'paid']);
+            // Booking status tetap 'approved' karena rental belum selesai
+            // Kendaraan status tetap 'rented' karena sudah dialokasikan
+
+            return redirect()->route('admin.transactions.index')->with('success', 'Transaction has been confirmed successfully.');
+        }
+
+        return redirect()->route('admin.transactions.index')->with('error', 'Invalid status update.');
+    }
 }

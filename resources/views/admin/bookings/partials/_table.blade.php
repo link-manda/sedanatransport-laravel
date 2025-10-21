@@ -29,6 +29,7 @@
                         @if($booking->status == 'pending') bg-yellow-100 text-yellow-800 @endif
                         @if($booking->status == 'cancelled') bg-red-100 text-red-800 @endif
                         @if($booking->status == 'completed') bg-blue-100 text-blue-800 @endif
+                        @if($booking->status == 'expired') bg-gray-100 text-gray-800 @endif
                     ">
                         {{ ucfirst($booking->status) }}
                     </span>

@@ -21,7 +21,22 @@ class Transaction extends Model
         'payment_method',
         'status',
         'payment_url',
+        'payment_due_at',
     ];
+
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'paid_at' => 'datetime',
+            'payment_due_at' => 'datetime', // Tambahkan ini
+        ];
+    }
 
     /**
      * Get the booking that owns the transaction.

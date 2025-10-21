@@ -78,11 +78,12 @@ class BookingManagementController extends Controller
             $vehicle->status = 'rented';
             $vehicle->save();
 
-            // Buat transaksi baru
+            // Buat transaksi baru dengan batas waktu pembayaran 24 jam
             Transaction::create([
                 'booking_id' => $booking->id,
                 'amount' => $booking->total_price,
                 'status' => 'pending',
+                'payment_due_at' => now()->addHours(24),
             ]);
 
             SendBookingApprovedEmail::dispatch($booking);
@@ -90,7 +91,7 @@ class BookingManagementController extends Controller
             return redirect()->route('admin.bookings.index')->with('success', 'Booking approved and transaction created.');
         }
 
-        if (in_array($request->status, ['cancelled', 'completed'])) {
+        if (in_array($request->status, ['cancelled', 'completed', 'expired'])) {
             $activeBookings = Booking::where('vehicle_id', $vehicle->id)
                 ->where('status', 'approved')
                 ->exists();
@@ -100,8 +101,8 @@ class BookingManagementController extends Controller
                 $vehicle->save();
             }
 
-            if ($booking->transaction) {
-                $booking->transaction->update(['status' => 'cancelled']);
+            if ($booking->transaction && $booking->transaction->status === 'pending') {
+                $booking->transaction->update(['status' => 'failed']);
             }
         }
 

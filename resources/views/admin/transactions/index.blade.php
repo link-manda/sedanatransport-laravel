@@ -24,7 +24,12 @@
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Booking Date</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Payment Proof
+                                    </th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
@@ -37,18 +42,39 @@
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                                                 @if ($transaction->status == 'paid') bg-green-100 text-green-800 @endif
                                                 @if ($transaction->status == 'unpaid') bg-yellow-100 text-yellow-800 @endif
-                                                @if ($transaction->status == 'cancelled') bg-red-100 text-red-800 @endif">
+                                                @if ($transaction->status == 'cancelled') bg-red-100 text-red-800 @endif                                                
+                                                @if ($transaction->status == 'waiting_confirmation') bg-blue-100 text-blue-800 text-xs font-medium me-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300 @endif">
                                             {{ ucfirst($transaction->status) }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $transaction->booking->created_at->format('d M Y') }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        @if ($transaction->status == 'unpaid')
-                                        <form action="{{ route('admin.transactions.markAsPaid', $transaction) }}" method="POST" onsubmit="return confirm('Are you sure you want to mark this as paid?');">
+                                    <td class="px-6 py-4">
+                                        @if ($transaction->payment_proof)
+                                        <a href="{{ Storage::url($transaction->payment_proof) }}" target="_blank" class="font-medium text-blue-600 dark:text-blue-500 hover:underline">
+                                            View Proof
+                                        </a>
+                                        @else
+                                        -
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        {{-- Tampilkan tombol hanya jika statusnya waiting_confirmation --}}
+                                        @if ($transaction->status == 'waiting_confirmation')
+                                        <form action="{{ route('admin.transactions.updateStatus', $transaction->id) }}" method="POST" class="inline-block">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="text-indigo-600 hover:text-indigo-900">Mark as Paid</button>
+                                            <input type="hidden" name="status" value="paid">
+                                            <button type="submit" class="font-medium text-green-600 dark:text-green-500 hover:underline">Confirm</button>
                                         </form>
+                                        <span class="mx-1">|</span>
+                                        <form action="{{ route('admin.transactions.updateStatus', $transaction->id) }}" method="POST" class="inline-block">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="status" value="failed">
+                                            <button type="submit" class="font-medium text-red-600 dark:text-red-500 hover:underline">Reject</button>
+                                        </form>
+                                        @else
+                                        -
                                         @endif
                                     </td>
                                 </tr>
