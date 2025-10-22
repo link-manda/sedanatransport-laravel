@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Vehicle;
 use App\Models\Booking;
+use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 
 class VehiclePageController extends Controller
@@ -20,13 +22,20 @@ class VehiclePageController extends Controller
             ->whereIn('status', ['approved', 'ongoing', 'paid'])
             ->get();
 
-        $booked_dates = $bookings->map(function ($booking) {
-            return [
-                'from' => $booking->start_date->format('Y-m-d'),
-                'to'   => $booking->end_date->format('Y-m-d'),
-            ];
-        });
+        $booked_dates = [];
 
+        foreach ($bookings as $booking) {
+            // Buat periode dari tanggal mulai hingga tanggal selesai untuk setiap booking
+            $period = CarbonPeriod::create($booking->start_date, $booking->end_date);
+
+            // Tambahkan setiap tanggal dalam periode tersebut ke dalam array
+            foreach ($period as $date) {
+                $booked_dates[] = $date->format('Y-m-d');
+            }
+        }
+
+        $booked_dates = array_values(array_unique($booked_dates));
+        
         return view('vehicles.show', compact('vehicle', 'booked_dates'));
     }
 }

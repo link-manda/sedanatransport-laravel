@@ -106,52 +106,64 @@
 
     @push('scripts')
     <script>
-        // Inisialisasi Litepicker untuk Start Date
-        const startDatePicker = new Litepicker({
-            element: document.getElementById('start_date'),
-            singleMode: true,
-            format: 'YYYY-MM-DD',
-            autoApply: true,
-            minDate: new Date(), // tidak bisa pilih tanggal kemarin
-            lang: {
-                days: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
-                months: [
-                    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-                ],
-                apply: 'Pilih',
-                cancel: 'Batal'
-            },
-            onSelect: (date) => {
-                // Set minDate untuk end date = start date
-                endDatePicker.setOptions({
-                    minDate: date.dateInstance
-                });
-            }
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            const bookedDates = {!! Illuminate\Support\Js::from($booked_dates) !!};
 
-        // Inisialisasi Litepicker untuk End Date
-        const endDatePicker = new Litepicker({
-            element: document.getElementById('end_date'),
-            singleMode: true,
-            format: 'YYYY-MM-DD',
-            autoApply: true,
-            minDate: new Date(),
-            lang: {
-                days: ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'],
-                months: [
-                    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-                    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-                ],
-                apply: 'Pilih',
-                cancel: 'Batal'
-            },
-            onSelect: (date) => {
-                // Set maxDate untuk start date = end date
-                startDatePicker.setOptions({
-                    maxDate: date.dateInstance
-                });
-            }
+            const picker = new Litepicker({
+                element: document.getElementById('start_date'),
+                elementEnd: document.getElementById('end_date'),
+                singleMode: false,
+                allowRepick: true,
+                minDate: new Date(),
+                format: 'YYYY-MM-DD',
+
+                lockDaysFilter: (day) => {
+                    const d = day.dateInstance;
+                    const dateString = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+                    if (bookedDates.includes(dateString)) {
+                        // Tambahkan label "Booked"
+                        day.html += '<div style="font-size: 9px; color: red; text-align: center; position: absolute; bottom: 0; width: 100%;">Booked</div>';
+                        return true; // Kunci tanggal ini
+                    }
+                    return false;
+                },
+
+                // Opsional: cegah pemilihan rentang yang mengandung tanggal terkunci
+                onSelect: (start, end) => {
+                    if (!start || !end) return;
+
+                    let current = new Date(start.dateInstance);
+                    const endDate = new Date(end.dateInstance);
+                    const invalidInRange = [];
+
+                    while (current <= endDate) {
+                        const y = current.getFullYear();
+                        const m = String(current.getMonth() + 1).padStart(2, '0');
+                        const d = String(current.getDate()).padStart(2, '0');
+                        const dateStr = `${y}-${m}-${d}`;
+
+                        if (bookedDates.includes(dateStr)) {
+                            invalidInRange.push(dateStr);
+                        }
+
+                        current.setDate(current.getDate() + 1);
+                    }
+
+                    if (invalidInRange.length > 0) {
+                        alert('Rentang tanggal mengandung hari yang sudah dipesan: ' + invalidInRange.join(', '));
+                        // Kosongkan input
+                        document.getElementById('start_date').value = '';
+                        document.getElementById('end_date').value = '';
+                        picker.setDate(null);
+                    }
+                },
+
+                buttonText: {
+                    previousMonth: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>`,
+                    nextMonth: `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>`,
+                },
+            });
         });
     </script>
     @endpush
