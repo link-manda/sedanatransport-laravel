@@ -19,9 +19,12 @@ class Transaction extends Model
         'booking_id',
         'amount',
         'payment_method',
+        'payment_proof',
         'status',
+        'rejection_reason',
         'payment_url',
         'payment_due_at',
+        'paid_at',
     ];
 
 

@@ -46,15 +46,6 @@
                         @endif
                         {{-- Overlay on Hover --}}
                         <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-opacity duration-300"></div>
-                        {{-- Status Badge di atas gambar --}}
-                        <div class="absolute top-3 right-3">
-                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold capitalize shadow-sm
-                                        @if($vehicle->status == 'available') bg-green-100 text-green-800 border border-green-200
-                                        @elseif($vehicle->status == 'rented') bg-orange-100 text-orange-800 border border-orange-200
-                                        @else bg-gray-100 text-gray-800 border border-gray-200 @endif">
-                                {{ $vehicle->status }}
-                            </span>
-                        </div>
                     </a>
 
                     {{-- Detail Kendaraan --}}
