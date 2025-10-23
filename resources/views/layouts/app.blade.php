@@ -15,8 +15,16 @@
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Library flatpckr -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/litepicker/dist/css/litepicker.css">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <style>
+        .booked-date {
+            background-color: #fee2e2 !important;
+            text-decoration: line-through !important;
+            color: #d1d5db !important;
+            cursor: not-allowed !important;
+        }
+    </style>
 </head>
 
 <body class="font-sans antialiased">
@@ -37,8 +45,9 @@
             {{ $slot }}
         </main>
     </div>
-    <!-- Script litepicker -->
-    <script src="https://cdn.jsdelivr.net/npm/litepicker/dist/litepicker.js"></script>
+
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     @stack('scripts')
 </body>
 

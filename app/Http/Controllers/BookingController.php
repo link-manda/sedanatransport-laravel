@@ -33,11 +33,6 @@ class BookingController extends Controller
         $startDate = Carbon::parse($request->start_date);
         $endDate = Carbon::parse($request->end_date);
 
-        // 2. Cek Status Kendaraan
-        if ($vehicle->status !== 'available') {
-            return back()->with('error', 'Sorry, this vehicle is not available for booking right now.');
-        }
-
         // 3. Cek Ketersediaan Tanggal
         $isVehicleBooked = Booking::where('vehicle_id', $request->vehicle_id)
             ->whereIn('status', ['approved', 'ongoing', 'paid', 'waiting_confirmation'])

@@ -8,13 +8,12 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\BookingManagementController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PaymentController;
 
 
 // Rute Publik
-Route::get('/', [VehiclePageController::class, 'index'])->name('home');
-Route::get('/vehicles/{vehicle}', [VehiclePageController::class, 'show'])->name('vehicles.show');
-
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 Route::get('/dashboard', function () {
     // Arahkan ke dashboard yang sesuai berdasarkan peran
@@ -24,6 +23,9 @@ Route::get('/dashboard', function () {
     return redirect()->route('bookings.index');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+
+Route::get('/vehicles', [VehiclePageController::class, 'index'])->name('vehicles.index');
+Route::get('/vehicles/{vehicle}', [VehiclePageController::class, 'show'])->name('vehicles.show');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
