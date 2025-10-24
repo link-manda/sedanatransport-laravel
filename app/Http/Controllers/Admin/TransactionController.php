@@ -8,7 +8,8 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule; 
 use App\Jobs\SendTransactionRejectedEmail; 
-use Illuminate\Support\Facades\Log;      
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;      
 
 class TransactionController extends Controller
 {
@@ -80,7 +81,7 @@ class TransactionController extends Controller
             // Pastikan rejection_reason di-null-kan jika sebelumnya ditolak lalu diterima
             $transaction->update([
                 'status' => 'paid',
-                'rejection_reason' => null
+                'rejection_reason' => Carbon::now(),
             ]);
             // Status booking tetap 'approved'
             // Status kendaraan tetap 'rented'

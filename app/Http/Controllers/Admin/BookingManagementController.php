@@ -9,13 +9,46 @@ use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use App\Jobs\SendBookingApprovedEmail;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log; // Import Log Facade
+use Illuminate\Support\Facades\Log;
 
 class BookingManagementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $bookings = Booking::with(['user', 'vehicle'])->latest()->paginate(10);
+        $query = Booking::with(['user', 'vehicle']);
+
+        // Search by customer name, email, or vehicle
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('user', function ($userQuery) use ($search) {
+                    $userQuery->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                })
+                    ->orWhereHas('vehicle', function ($vehicleQuery) use ($search) {
+                        $vehicleQuery->where('brand', 'like', "%{$search}%")
+                            ->orWhere('model', 'like', "%{$search}%")
+                            ->orWhere('plate_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Filter by status
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by date range
+        if ($request->filled('from_date')) {
+            $query->whereDate('start_date', '>=', $request->from_date);
+        }
+
+        if ($request->filled('to_date')) {
+            $query->whereDate('end_date', '<=', $request->to_date);
+        }
+
+        $bookings = $query->latest()->paginate(10)->withQueryString();
+
         return view('admin.bookings.index', compact('bookings'));
     }
 
@@ -32,25 +65,18 @@ class BookingManagementController extends Controller
                 $booking->vehicle->update(['status' => 'rented']);
             }
 
-            $transaction = $booking->transaction; // Dapatkan transaksi via relasi
+            $transaction = $booking->transaction;
 
             if ($transaction) {
                 $dueDate = Carbon::now()->addHours(24);
-                $updateResult = $transaction->update([
+                $transaction->update([
                     'payment_due_at' => $dueDate
                 ]);
 
-                // --- Tambahkan Debugging Di Sini ---
-                $transaction->refresh(); // Ambil data terbaru dari DB
-                Log::info("Attempting to approve Booking ID: {$booking->id}. Transaction ID: {$transaction->id}. Update result: " . ($updateResult ? 'Success' : 'Failed') . ". Due Date set to: " . $dueDate->toDateTimeString() . ". Value after refresh: " . ($transaction->payment_due_at ? $transaction->payment_due_at->toDateTimeString() : 'NULL'));
-                // --- Akhir Debugging ---
+                $transaction->refresh();
 
-
-                // Periksa apakah update benar-benar menyimpan nilai
                 if (!$transaction->payment_due_at) {
-                    Log::error("Failed to save payment_due_at for Transaction ID: {$transaction->id}. Value remains NULL after update and refresh.");
-                    // Mungkin lempar exception atau kembalikan error spesifik jika perlu
-                    // throw new \Exception("Failed to save payment_due_at.");
+                    Log::error("Failed to save payment_due_at for Transaction ID: {$transaction->id}");
                     return redirect()->route('admin.bookings.index')->with('error', 'Failed to set payment deadline. Please check logs.');
                 }
             } else {
@@ -58,14 +84,14 @@ class BookingManagementController extends Controller
                 return redirect()->route('admin.bookings.index')->with('error', 'Associated transaction not found.');
             }
 
-            // SendBookingApprovedEmail::dispatch($booking); // Nonaktifkan sementara untuk debugging jika perlu
+            // SendBookingApprovedEmail::dispatch($booking);
 
         } catch (\Exception $e) {
             Log::error("Error approving booking ID {$booking->id}: " . $e->getMessage());
             return redirect()->route('admin.bookings.index')->with('error', 'Failed to approve booking. An error occurred.');
         }
 
-        return redirect()->route('admin.bookings.index')->with('success', 'Booking approved successfully.'); // Hapus 'and notification sent' jika email dinonaktifkan
+        return redirect()->route('admin.bookings.index')->with('success', 'Booking approved successfully.');
     }
 
     public function cancel(Booking $booking)
@@ -75,15 +101,49 @@ class BookingManagementController extends Controller
         }
 
         try {
-            $booking->update(['status' => 'rejected']);
+            $booking->update(['status' => 'cancelled']);
+
             if ($booking->transaction) {
                 $booking->transaction->update(['status' => 'failed']);
+            }
+
+            if ($booking->vehicle && $booking->vehicle->status === 'rented') {
+                $booking->vehicle->update(['status' => 'available']);
             }
         } catch (\Exception $e) {
             Log::error("Error rejecting booking ID {$booking->id}: " . $e->getMessage());
             return redirect()->route('admin.bookings.index')->with('error', 'Failed to reject booking. An error occurred.');
         }
 
-        return redirect()->route('admin.bookings.index')->with('success', 'Booking rejected successfully.');
+        return redirect()->route('admin.bookings.index')->with('success', 'Booking cancelled successfully.');
+    }
+
+    public function complete(Booking $booking)
+    {
+        if ($booking->status !== 'ongoing') {
+            return redirect()->route('admin.bookings.index')->with('error', 'Only ongoing bookings can be marked as completed.');
+        }
+
+        try {
+            $booking->update(['status' => 'completed']);
+
+            // Set vehicle back to available
+            if ($booking->vehicle) {
+                $booking->vehicle->update(['status' => 'available']);
+            }
+
+            Log::info("Booking ID {$booking->id} marked as completed by admin.");
+        } catch (\Exception $e) {
+            Log::error("Error completing booking ID {$booking->id}: " . $e->getMessage());
+            return redirect()->route('admin.bookings.index')->with('error', 'Failed to complete booking. An error occurred.');
+        }
+
+        return redirect()->route('admin.bookings.index')->with('success', 'Booking completed successfully. Vehicle is now available.');
+    }
+
+    public function show(Booking $booking)
+    {
+        $booking->load(['user', 'vehicle', 'transaction']);
+        return view('admin.bookings.show', compact('booking'));
     }
 }
